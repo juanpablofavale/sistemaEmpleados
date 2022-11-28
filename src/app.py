@@ -2,6 +2,7 @@ from flask import Flask
 from flask import render_template, request, redirect
 from flaskext.mysql import MySQL
 from datetime import datetime
+import os
 
 app = Flask(__name__)
 mysql = MySQL()
@@ -10,6 +11,9 @@ app.config['MYSQL_DATABASE_HOST'] = 'localhost'
 app.config['MYSQL_DATABASE_USER'] = 'root'
 app.config['MYSQL_DATABASE_PASSWORD'] = 'root'
 app.config['MYSQL_DATABASE_DB'] = 'sistemaempleados'
+
+UPLOADS = os.path.join('uploads')
+app.config['UPLOADS']=UPLOADS
 
 mysql.init_app(app)
 
@@ -27,11 +31,7 @@ def leer_empleados():
 
 @app.route('/')
 def index():
-    return render_template('empleados/index.html', empleados=leer_empleados())
-
-@app.route('/create')
-def create():
-    return render_template('empleados/create.html')
+    return render_template('empleados/index.html', empleados=leer_empleados(), empleado=[])
 
 @app.route('/store', methods=["POST"])
 def store():
@@ -40,12 +40,12 @@ def store():
     _correo = request.form['txtcorreo']
     _foto = request.files['txtfoto']
 
-    hoy = datetime.now()
-    tiempo = hoy.strftime('%Y%H%M%S')
 
     print(tiempo)
 
     if _foto.filename != '':
+        hoy = datetime.now()
+        tiempo = hoy.strftime('%Y%H%M%S')
         nuevoNombreFoto = tiempo + ' ' + _foto.filename
         _foto.save('uploads/' + nuevoNombreFoto)
 
@@ -63,6 +63,55 @@ def store():
     conn.commit()
 
     return redirect('/')
+
+@app.route('/delete/<int:id>')
+def delete(id):
+    sql = 'DELETE FROM empleados WHERE id=%s'
+    conn = mysql.connect()
+    cursor = conn.cursor()
+    cursor.execute(sql, id)
+    conn.commit()
+    return redirect('/')
+
+@app.route('/modify/<int:id>')
+def modify(id):
+    sql=f"SELECT * FROM empleados WHERE id={id}"
+    conn = mysql.connect()
+    cursor = conn.cursor()
+    cursor.execute(sql)
+    empleado = cursor.fetchone()
+    conn.commit()
+
+    return render_template('empleados/index.html', empleados=leer_empleados(), empleado=empleado)
+
+@app.route('/update', methods=['POST'])
+def update():
+    _nombre = request.form('txtnom')
+    _correo = request.form['txtcorreo']
+    _foto = request.files['txtfoto'].filename
+    id = request.form['txtid']
+
+    if _foto.filename != '':
+        hoy = datetime.now()
+        tiempo = hoy.strftime('%Y%H%M%S')
+        nuevoNombreFoto = tiempo + ' ' + _foto.filename
+        _foto.save('uploads/' + nuevoNombreFoto)
+    else:
+        nuevoNombreFoto=_foto
+    
+    conn = mysql.connect()
+    cursor = conn.cursor()
+
+    sql = f"SELECT foto FROM empleados WHERE id={id}"
+    cursor.execute(sql)
+
+    nombre_foto = cursor.fetchone()[0]
+
+    os.remove(os.path.join(app.config['UPLOADS'], nombre_foto))
+
+    sql = f"UPDATE empleados SET nombre={_nombre}, correo={_correo}, foto={nuevoNombreFoto} WHERE id={id}"
+    cursor.execute(sql)
+    conn.commit()
 
 if __name__ == '__main__':
     app.run(debug=True)
