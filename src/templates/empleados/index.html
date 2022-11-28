@@ -1,67 +1,104 @@
-  {% include 'header.html' %}
-  <header>
-    <!-- place navbar here -->
-  </header>
-  <main>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Correo</th>
-                <th>Foto</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for empleado in empleados %}
-            <tr>
-                <td>{{empleado[0]}}</td>
-                <td>{{empleado[1]}}</td>
-                <td>{{empleado[2]}}</td>
-                <td>{{empleado[3]}}</td>
-                <td><a href="/modify/{{empleado[0]}}">Modificar</a>
-                |
-                <a href="/delete/{{empleado[0]}}">Borrar</a>
-              </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <br><hr><br>
-    <section>
-        {% if (empleado)==[] %}
-        <form method="POST" action="/store" enctype="multipart/form-data">
+{% include 'header.html' %}
+<header>
+  <!-- place navbar here -->
+</header>
+<main>
+  <table class="table table-dark">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Correo</th>
+        <th>Foto</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for empleado in empleados %}
+      <tr>
+        <td>{{empleado[0]}}</td>
+        <td>{{empleado[1]}}</td>
+        <td>{{empleado[2]}}</td>
+        <td>
+          <img height="60" src="imagenes/{{empleado[3]}}" alt="imagen de perfil">
+        </td>
+        <td><a class="btn btn-info" href="/modify/{{empleado[0]}}">Modificar</a>
+          <a class="btn btn-warning" href="/delete/{{empleado[0]}}">Borrar</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <br>
+  <hr><br>
+  <section>
+    {% if (empleado)==[] %}
+    <form method="POST" action="/store" enctype="multipart/form-data">
+      <div class="card">
+        <div class="card-header">
+          Agregar Empleado
+        </div>
+        <div class="card-body">
+          <p class="card-text">
+          <div class="form-group">
             <label for="txtnom">Nombre</label>
-            <input type="text" name="txtnom"><br>
+            <input type="text" name="txtnom">
+          </div>
+          <div class="form-group">
             <label for="txtcorreo">Correo</label>
-            <input type="text" name="txtcorreo"><br>
+            <input type="text" name="txtcorreo">
+          </div>
+          <div class="form-group">
             <label for="txtfoto">Foto</label>
-            <input type="file" name="txtfoto"><br><br>
-            <button type="submit">Agregar</button>
-        </form>
-        {% else %}
-        <form method="POST" action="/update" enctype="multipart/form-data">
+            <input type="file" name="txtfoto">
+          </div>
+          <div class="form-group">
+            <button class="btn btn-primary" type="submit">Agregar</button>
+          </div>
+          </p>
+        </div>
+      </div>
+    </form>
+    {% else %}
+    <form method="POST" action="/update" enctype="multipart/form-data">
+      <div class="card">
+        <div class="card-header">
+          Modificar Empleado
+        </div>
+        <div class="card-body">
           <input hidden type="text" name="txtid" value="{{empleado[0]}}"><br>
-          <label for="txtnom">Nombre</label>
-          <input type="text" name="txtnom" value="{{empleado[1]}}"><br>
-          <label for="txtcorreo">Correo</label>
-          <input type="text" name="txtcorreo" value="{{empleado[2]}}"><br>
-          <label for="txtfoto">Foto</label>
-          <input type="file" name="txtfoto" value="{{empleado[3]}}"><br><br>
-          <button type="submit">Modificar</button>
-      </form>
-      {% endif %}
-    </section>
-  </main>
-  <footer>
-    <!-- place footer here -->
-  </footer>
-  <!-- Bootstrap JavaScript Libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"
-    integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous">
+          <div class="form-group">
+            <label for="txtnom">Nombre</label>
+            <input type="text" name="txtnom" value="{{empleado[1]}}"><br>
+          </div>
+          <div class="form-group">
+            <label for="txtcorreo">Correo</label>
+            <input type="text" name="txtcorreo" value="{{empleado[2]}}"><br>
+          </div>
+          <div class="form-group">
+            <label for="txtfoto">Foto</label>
+            <img height="60" src="{{url_for('uploads', nombre_foto=empleado[3]) }}" alt="">
+            <input type="file" name="txtfoto" value="{{empleado[3]}}"><br><br>
+          </div>
+          <div class="form-group">
+            <button class="btn btn-info" type="submit">Modificar</button>
+            <a href="{{url_for('index')}}" class="btn btn-dark">Atras</a>
+          </div>
+        </div>
+      </div>
+    </form>
+    {% endif %}
+  </section>
+</main>
+<footer>
+  <!-- place footer here -->
+</footer>
+<!-- Bootstrap JavaScript Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"
+  integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous">
   </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.min.js"
-    integrity="sha384-7VPbUDkoPSGFnVtYi0QogXtr74QeVeeIs99Qfg5YCF+TidwNdjvaKZX19NZ/e6oz" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.min.js"
+  integrity="sha384-7VPbUDkoPSGFnVtYi0QogXtr74QeVeeIs99Qfg5YCF+TidwNdjvaKZX19NZ/e6oz" crossorigin="anonymous">
   </script>
-  {% include 'header.html' %}
+{% include 'header.html' %}

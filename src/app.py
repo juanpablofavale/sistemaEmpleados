@@ -1,5 +1,5 @@
-from flask import Flask
-from flask import render_template, request, redirect
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory
+# url_for se usa para direccionar directamente a una funcion sin usar el route
 from flaskext.mysql import MySQL
 from datetime import datetime
 import os
@@ -17,19 +17,29 @@ app.config['UPLOADS']=UPLOADS
 
 mysql.init_app(app)
 
-def leer_empleados():
+def queryMySql(query, data=()):
     conn = mysql.connect()
     cursor = conn.cursor()
+    if len(data)>0:
+        cursor.execute(query, data)
+    else:
+        cursor.execute(query)
 
-    sql = "SELECT * FROM empleados"
-
-    cursor.execute(sql)
-    empleados = cursor.fetchall()
     conn.commit()
-    return empleados
+    return cursor
+
+def leer_empleados():
+    return queryMySql("SELECT * FROM empleados")
 
 def borrar_foto(foto):
+    try:
         os.remove(os.path.join(app.config['UPLOADS'], foto))
+    except:
+        pass
+
+@app.route('/imagenes/<path:nombre_foto>')
+def uploads(nombre_foto):
+    return send_from_directory(os.path.join('uploads'), nombre_foto)
 
 @app.route('/')
 def index():
@@ -50,46 +60,28 @@ def store():
 
     sql = "INSERT INTO empleados (nombre, correo, foto) values (%s, %s, %s);"
     datos = (_nombre, _correo, nuevoNombreFoto)
-
-    # sql = f"INSERT INTO empleados (nombre, correo, foto) values ('{_nombre}', '{_correo}', '{_foto}');"
-
-    conn = mysql.connect()
-    cursor = conn.cursor()
-
-    # cursor.execute(sql)
-
-    cursor.execute(sql, datos)
-    conn.commit()
+    queryMySql(sql, datos)
 
     return redirect('/')
 
 @app.route('/delete/<int:id>')
 def delete(id):
 
-    conn = mysql.connect()
-    cursor = conn.cursor()
-    
-    sql = f"SELECT foto FROM empleados WHERE id={id}"
-    cursor.execute(sql)
+    cursor = queryMySql("SELECT foto FROM empleados WHERE id='%s'", (id,))
 
     nombre_foto = cursor.fetchone()[0]
     borrar_foto(nombre_foto)
 
+    queryMySql("DELETE FROM empleados WHERE id='%s'", (id,))
 
-    sql = 'DELETE FROM empleados WHERE id=%s'
-    cursor.execute(sql, id)
-    conn.commit()
     return redirect('/')
 
 @app.route('/modify/<int:id>')
 def modify(id):
-    sql=f"SELECT * FROM empleados WHERE id={id}"
-    conn = mysql.connect()
-    cursor = conn.cursor()
-    cursor.execute(sql)
-    empleado = cursor.fetchone()
-    conn.commit()
 
+    cursor = queryMySql("SELECT * FROM empleados WHERE id='%s'", (id,))
+    empleado = cursor.fetchone()
+    
     return render_template('empleados/index.html', empleados=leer_empleados(), empleado=empleado)
 
 @app.route('/update', methods=['POST'])
@@ -99,29 +91,23 @@ def update():
     _foto = request.files['txtfoto']
     id = request.form['txtid']
 
-    conn = mysql.connect()
-    cursor = conn.cursor()
-
     if _foto.filename != '':
         hoy = datetime.now()
         tiempo = hoy.strftime('%Y%H%M%S')
         nuevoNombreFoto = tiempo + ' ' + _foto.filename
         _foto.save('src/uploads/' + nuevoNombreFoto)
 
-        sql = f"SELECT foto FROM empleados WHERE id={id}"
-        cursor.execute(sql)
-
+        cursor = queryMySql("SELECT foto FROM empleados WHERE id=%s", (id,))
         nombre_foto = cursor.fetchone()[0]
         borrar_foto(nombre_foto)
 
-        sql = f'UPDATE empleados SET foto="{nuevoNombreFoto}" WHERE id={id}'
-        cursor.execute(sql)
-        conn.commit()
+        sql = 'UPDATE empleados SET foto=%s WHERE id=%s'
+        queryMySql(sql, (nuevoNombreFoto, (id,)))
 
 
-    sql = f'UPDATE empleados SET nombre="{_nombre}", correo="{_correo}" WHERE id={id}'
-    cursor.execute(sql)
-    conn.commit()
+    sql = 'UPDATE empleados SET nombre=%s, correo=%s WHERE id=%s'
+    data=(_nombre, _correo, id)
+    queryMySql(sql, data)
 
     return redirect('/')
 
